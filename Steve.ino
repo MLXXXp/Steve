@@ -1,7 +1,12 @@
+#define INCLUDE_SOUND
+
 #include <Arduboy2.h>
 //#include <EEPROM.h>
 #include "EEPROMUtils.h"
 #include "Images.h"
+#ifdef INCLUDE_SOUND
+#include "ArduboyBeep.h"
+#endif
 
 #define NUMBER_OF_OBSTACLES         3     
 #define GROUND_LEVEL                55
@@ -65,6 +70,9 @@ struct Obstacle {
 };
 
 Arduboy2 arduboy;
+#ifdef INCLUDE_SOUND
+BeepPin1 beep;
+#endif
 int frame = 0;
 int groundX = 0;
 
@@ -104,9 +112,15 @@ const byte *ground_images[] = { ground_flat, ground_bump, ground_hole };
 void setup() {
 
   initEEPROM();
-  arduboy.boot();
+  arduboy.begin();
+//  arduboy.boot();
+//  arduboy.systemButtons();
+//  arduboy.audio.begin();
   arduboy.setFrameRate(75);
   arduboy.initRandomSeed();
+#ifdef INCLUDE_SOUND
+  beep.begin();
+#endif
   
 }
 
@@ -121,6 +135,10 @@ void loop() {
   
   if (!(arduboy.nextFrame())) return;
   
+#ifdef INCLUDE_SOUND
+  beep.timer();
+#endif
+
   arduboy.pollButtons();
 
   switch (gameStatus) {
@@ -243,8 +261,21 @@ void playGame() {
 
   if (!steve.jumping) {
 
-    if (arduboy.justPressed(A_BUTTON))                          { steve.jumping = true; steve.jumpIndex = 0; }
-    if (arduboy.justPressed(B_BUTTON))                          { if (steve.stance != Stance::Ducking2) { steve.stance = Stance::Ducking1; }; } 
+    if (arduboy.justPressed(A_BUTTON)) {
+      steve.jumping = true;
+      steve.jumpIndex = 0;
+#ifdef INCLUDE_SOUND
+      beep.tone(beep.freq(1000), 8);
+#endif
+    }
+    if (arduboy.justPressed(B_BUTTON)) {
+      if (steve.stance != Stance::Ducking2) {
+        steve.stance = Stance::Ducking1;
+      }
+#ifdef INCLUDE_SOUND
+      beep.tone(beep.freq(200), 20);
+#endif
+    }
     if (arduboy.pressed(LEFT_BUTTON) && steve.x > 0)            { steve.x--; }
     if (arduboy.pressed(RIGHT_BUTTON) && steve.x < 100)         { steve.x++; }
 
@@ -293,6 +324,9 @@ void playGame() {
       steve.y = STEVE_GROUND_LEVEL;
       steve.stance = Stance::Dead2;
     }
+#ifdef INCLUDE_SOUND
+      beep.tone(beep.freq(100), 60);
+#endif
     gameStatus = GameStatus::GameOver;
 
   }
